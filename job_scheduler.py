@@ -66,7 +66,7 @@ def SJF (df):
     print(sorted_df)
 
     n = len(sorted_df["jobs"].tolist())
-    b = "False"
+    b = False
     # extracte a list of all the arrive times.
     AT = sorted_df["AT"].tolist()
     CBT = sorted_df["CBT"].tolist()
@@ -81,7 +81,7 @@ def SJF (df):
     sorted_df["x_range"] = np.empty((len(sorted_df), 0)).tolist()
     print(sorted_df)
 
-    while b == "False":
+    while b == False:
 
         arrived_list = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
         print("arrived_list", arrived_list)
@@ -118,8 +118,9 @@ def SJF (df):
             time_counter = time_counter + q
             sorted_df.at[index, "CBT"] = min_cbt - q
         print(time_counter)
-        if sum(CBT) == time_counter:
-            b = "True"
+        if sum(CBT) <= time_counter:
+            print("ifffff")
+            b = True
         # if all jobs have finished
         # then break out of the while loop.
         #if arrived_cbt == []:
