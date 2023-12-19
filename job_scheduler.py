@@ -10,7 +10,7 @@ def FIFO (df):
     the job that arrives first has the highest priority,
     *accepts one parameter with the format of a pandas dataframe,
     *this function provides a simple horizantal bar chart,
-    *together with the sorted data by arrive time.'''
+    *together with the data sorted by arrive time.'''
 
     # sort the dataframe named 'df' 
     # by 'AT' values.
@@ -59,56 +59,65 @@ def FIFO (df):
 ######################
 
 def SJF (df):
+    '''SJF,
+    Shortest Job First,
+    the job whose CBT is smallest has the highest priority,
+    *accepts one parameter with the format of a pandas dataframe,
+    *this function provides a broken horizantal bar chart,
+    *together with the data sorted by arrive time.'''
 
     q = int(input("Enter the time slice!"))
+    # sort the dataframe named 'df' 
+    # by 'AT' values.
     sorted_df = df.sort_values("AT")
-
-    print(sorted_df)
-
+    # this number will be needed throughout the code.
     n = len(sorted_df["jobs"].tolist())
-    b = False
-    # extracte a list of all the arrive times.
+    # extracte a list of all the arrive times and CBTs.
     AT = sorted_df["AT"].tolist()
     CBT = sorted_df["CBT"].tolist()
-    # initialize value of 'var'
+    # initialize value of 'time_counter'
     # to the arrive time of the first job.
     # meaning the earliest arrive time.
+    # this value will hold for use the milisecond that we are at.
     time_counter = AT[0]
-    # a list for keeping track of jobs 
-    # which have arrived at the checking point.
-    arrived_list = []
-    # create a  new column with initial value of empty list.
+    # create a  new column with initial value of empty list
+    # which will hold the (xmin, xwidth) for the chart.
     sorted_df["x_range"] = np.empty((len(sorted_df), 0)).tolist()
-    print(sorted_df)
+    # a value which only use is to stop 
+    # the while loop at the right time.
+    b = False
 
+    # to check which job to turn to process next 
+    # we need a loop.
     while b == False:
-
+        # a list to keep track of jobs 
+        # which have arrived at one point of time 
+        # specified by 'time_counter'
         arrived_list = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
-        print("arrived_list", arrived_list)
         arrived_cbt = sorted_df.query("jobs == @arrived_list")["CBT"].tolist()
-        print("arrived_CBT", arrived_cbt)
+        # deleting the finished jobs with 0 CBT.
         arrived_cbt = [i for i in arrived_cbt if i != 0]
+
+        # ERROR HANDLING:
+        # to show the gap from finish time of the last job
+        # to arrive time of the next job.
         if arrived_cbt == []: 
             time_counter = AT[len(arrived_list)]
             continue
 
         min_cbt = min(arrived_cbt)
-        print("min_cbt", min_cbt)
 
-        # add the run time to x_range column
+        # add the time to x_range column
         index = sorted_df[sorted_df["CBT"]== min_cbt].index.values
         index = index[0]
-        print("index", index)
         x_min_cbt = sorted_df.at[index, "x_range"]
-        
         if min_cbt < q:
             x_min_cbt.append((time_counter, min_cbt))
         else:
             x_min_cbt.append((time_counter, q))
-        
         sorted_df.at[index, "x_range"] = x_min_cbt
 
-        # subtract the run time from 
+        # subtract the run time from CBT of the job and
         # add to the time_counter the amount of run time
         # for this time slice.
         if min_cbt < q:
@@ -117,40 +126,40 @@ def SJF (df):
         else:
             time_counter = time_counter + q
             sorted_df.at[index, "CBT"] = min_cbt - q
-        print(time_counter)
+        # to break from the loop when all jobs have finished.
         if sum(CBT) <= time_counter:
-            print("ifffff")
             b = True
-        # if all jobs have finished
-        # then break out of the while loop.
-        #if arrived_cbt == []:
-            #b = "True"
 
     fig, gnt = plt.subplots(figsize=(10, 6))
     gnt.set_ylim(0, 100)
     gnt.set_xlim(0, sum(CBT))
     xranges = sorted_df["x_range"].tolist()
-    #y_range = df["y_range"]
-    print(sorted_df)
-    print(df)
     yticks_list = []
     for i in range(0, n):
         yranges = (i * (100 / n), (100 / n))
-        print("yranges, xranges", yranges, xranges[i])
         yticks_list.append(((i + 1) * (100 / n)) - (0.5 * (100 / n)))
         gnt.broken_barh(xranges[i], yranges)
     jobs = sorted_df["jobs"].tolist()
-    print("ytick_list", yticks_list)
     gnt.set_yticks(yticks_list)
     gnt.set_yticklabels(jobs)
     
     plt.show()
 
 ######################
+    
+def Random (df):
+
+
+    
+    
+
+
+
+######################
 #Testing...
 ######################
 #valid test data:
-df = pd.DataFrame(
+df1 = pd.DataFrame(
     {
         "jobs": ["job1", "job2", "job3"],
         "AT": [0, 1, 4],
@@ -158,5 +167,15 @@ df = pd.DataFrame(
     }
 )
 ######################
-#FIFO (df)
-SJF (df)
+######################
+#valid test data:
+df2 = pd.DataFrame(
+    {
+        "jobs": ["job1", "job2", "job3", "job4", "job5"],
+        "AT": [1, 2, 3, 4, 5],
+        "CBT": [5, 1, 3, 4, 2],
+    }
+)
+######################
+#FIFO (df1)
+SJF (df2)
