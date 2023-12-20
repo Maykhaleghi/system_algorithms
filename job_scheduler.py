@@ -131,12 +131,17 @@ def SJF (df):
         if sum(CBT) <= time_counter:
             b = True
 
+    # create a figure.
     fig, gnt = plt.subplots(figsize=(10, 6))
+    # set limits so later on the placing of each tick can be precise.
     gnt.set_ylim(0, 100)
     gnt.set_xlim(0, sum(CBT))
     xranges = sorted_df["x_range"].tolist()
     yticks_list = []
+    # we need a loop to iterate over each job 
+    # so we can create the bar for each job.
     for i in range(0, n):
+        # calculate the place of ticks for each job.
         yranges = (i * (100 / n), (100 / n))
         yticks_list.append(((i + 1) * (100 / n)) - (0.5 * (100 / n)))
         gnt.broken_barh(xranges[i], yranges)
@@ -167,34 +172,28 @@ def Random (df):
         # which have arrived at one point of time 
         # specified by 'time_counter'
         arrived_jobs = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
-        print(arrived_jobs)
-        #arrived_cbt = sorted_df.query("jobs == @arrived_list")["CBT"].tolist()
+        # using Random library, choose one of the arrived jobs.
         rand_job = random.choice(arrived_jobs)
         random_jobs.append(rand_job)
         rand_cbt = sorted_df.query("jobs == @rand_job")["CBT"].tolist()
         random_cbt.append(rand_cbt[0])
+        # add cbt of the job being processed to time_counter
+        # so it shows the real time.
         start_point.append(time_counter)
         time_counter = time_counter + rand_cbt[0]
         finish_point.append(time_counter)
+        # find the index of the job that's being processed
+        # so we can delete it from the database as it is already processed.
         index = sorted_df[sorted_df["jobs"]== rand_job].index.values
         index = index[0]
         sorted_df = sorted_df.drop(index)
-        print(sorted_df)
-        print("ifffffffffffff")
-
-
-
-
+        
     # create a figure.
     fig, gnt = plt.subplots(figsize=(10, 6))
-    print("random jobs", random_jobs)
-    print("random cbt", random_cbt)
     # create a horizantal bar chart, using 'barh'.
     gantt = gnt.barh(random_jobs, random_cbt, left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
     plt.show()
-
-
 
 ######################
 #Testing...
@@ -219,5 +218,5 @@ df2 = pd.DataFrame(
 )
 ######################
 #FIFO (df2)
-SJF (df2)
-#Random(df2)
+#SJF (df2)
+Random(df2)
