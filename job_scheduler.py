@@ -1,3 +1,4 @@
+import random
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -149,9 +150,49 @@ def SJF (df):
     
 def Random (df):
 
+    sorted_df = df.sort_values("AT")
+    #jobs = sorted_df["jobs"].tolist()
+    AT = sorted_df["AT"].tolist()
+     # initialize value of 'time_counter'
+    # to the arrive time of the first job.
+    # meaning the earliest arrive time.
+    # this value will hold for use the milisecond that we are at.
+    time_counter = AT[0]
+    start_point = []
+    finish_point = []
+    random_cbt = []
+    random_jobs = []
+    for i in AT:
+        # a list to keep track of jobs 
+        # which have arrived at one point of time 
+        # specified by 'time_counter'
+        arrived_jobs = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
+        print(arrived_jobs)
+        #arrived_cbt = sorted_df.query("jobs == @arrived_list")["CBT"].tolist()
+        rand_job = random.choice(arrived_jobs)
+        random_jobs.append(rand_job)
+        rand_cbt = sorted_df.query("jobs == @rand_job")["CBT"].tolist()
+        random_cbt.append(rand_cbt[0])
+        start_point.append(time_counter)
+        time_counter = time_counter + rand_cbt[0]
+        finish_point.append(time_counter)
+        index = sorted_df[sorted_df["jobs"]== rand_job].index.values
+        index = index[0]
+        sorted_df = sorted_df.drop(index)
+        print(sorted_df)
+        print("ifffffffffffff")
 
-    
-    
+
+
+
+    # create a figure.
+    fig, gnt = plt.subplots(figsize=(10, 6))
+    print("random jobs", random_jobs)
+    print("random cbt", random_cbt)
+    # create a horizantal bar chart, using 'barh'.
+    gantt = gnt.barh(random_jobs, random_cbt, left = start_point)
+    gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
+    plt.show()
 
 
 
@@ -162,7 +203,7 @@ def Random (df):
 df1 = pd.DataFrame(
     {
         "jobs": ["job1", "job2", "job3"],
-        "AT": [0, 1, 4],
+        "AT": [0, 1, 3],
         "CBT": [1, 2, 3],
     }
 )
@@ -177,5 +218,6 @@ df2 = pd.DataFrame(
     }
 )
 ######################
-#FIFO (df1)
+#FIFO (df2)
 SJF (df2)
+#Random(df2)
