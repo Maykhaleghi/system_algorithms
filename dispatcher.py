@@ -58,26 +58,87 @@ def FCFS (df):
 
 ######################
     
+def SPN (df):
+    '''Shortest Job First,
+    The job which has the shortest burst time has the highst priority,
+    *accepts one parameter with the format of a pandas dataframe,
+    *this function provides a simple horizantal bar chart.'''
+
+    sorted_df = df.sort_values("AT")
+    #jobs = sorted_df["jobs"].tolist()
+    AT = sorted_df["AT"].tolist()
+     # initialize value of 'time_counter'
+    # to the arrive time of the first job.
+    # meaning the earliest arrive time.
+    # this value will hold for use the milisecond that we are at.
+    time_counter = AT[0]
+    start_point = []
+    finish_point = []
+    process_cbt = []
+    process_order = []
+
+    # a loop to iterate over each process.
+    while sorted_df["CBT"].tolist() != []:
+        print("iffffffffffff")
+        # a list to keep track of jobs 
+        # which have arrived at one point of time 
+        # specified by 'time_counter'
+        arrived_list = df.query("AT <= @time_counter")["processes"].tolist()
+        arrived_cbt = sorted_df.query("processes == @arrived_list")["CBT"].tolist()
+        # ERROR HANDLING:
+        # to show the gap from finish time of the last job
+        # to arrive time of the next job.
+        if arrived_cbt == [] and max(AT) > time_counter: 
+            print("time_counter", time_counter)
+            time_counter = AT[len(arrived_list)]
+            continue
+        
+        start_point.append(time_counter)
+        min_cbt = min(arrived_cbt)
+        process_cbt.append(min_cbt)
+        time_counter = time_counter + min_cbt
+
+        # add the time to x_range column
+        index = sorted_df[sorted_df["CBT"] == min_cbt].index.values
+        index = index[0]
+
+        min_process = sorted_df.at[index, "processes"]
+
+        process_order.append(min_process)
+        
+        sorted_df = sorted_df.drop(index)
+        
+    print(process_order)
+    print(process_cbt)
+    print(start_point)
+    # create a figure.
+    fig, gnt = plt.subplots(figsize=(10, 6))
+    # create a horizantal bar chart, using 'barh'.
+    gantt = gnt.barh(process_order, process_cbt, left = start_point)
+    gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
+    plt.show()
+
 ######################
 #Testing...
 ######################
-#valid test data:
+#valid test data with gap:
 df1 = pd.DataFrame(
     {
         "processes": ["p1", "p2", "p3"],
-        "AT": [0, 1, 3],
-        "CBT": [1, 2, 3],
+        "AT": [0, 6, 2],
+        "CBT": [3, 3, 1],
     }
 )
 ######################
 ######################
-#valid test data:
+#valid test data without gap:
 df2 = pd.DataFrame(
     {
         "processes": ["p1", "p2", "p3", "p4", "p5"],
         "AT": [1, 2, 3, 4, 5],
-        "CBT": [5, 1, 3, 4, 2],
+        "CBT": [2, 1, 3, 1, 2],
     }
 )
 ######################
-FCFS (df2)
+#FCFS (df1)
+SPN(df1)
