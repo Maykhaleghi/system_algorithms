@@ -167,11 +167,20 @@ def Random (df):
     finish_point = []
     random_cbt = []
     random_jobs = []
-    for i in AT:
+
+    while sorted_df["CBT"].tolist() != []:
         # a list to keep track of jobs 
         # which have arrived at one point of time 
         # specified by 'time_counter'
+        arrived_jobs_df = df.query("AT <= @time_counter")["jobs"].tolist()
         arrived_jobs = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
+        # ERROR HANDLING:
+        # to show the gap from finish time of the last job
+        # to arrive time of the next job.
+        if arrived_jobs == [] and max(AT) > time_counter:
+            print("time_counter", time_counter)
+            time_counter = AT[len(arrived_jobs_df)]
+            continue
         # using Random library, choose one of the arrived jobs.
         rand_job = random.choice(arrived_jobs)
         random_jobs.append(rand_job)
@@ -202,7 +211,7 @@ def Random (df):
 df1 = pd.DataFrame(
     {
         "jobs": ["job1", "job2", "job3"],
-        "AT": [0, 1, 3],
+        "AT": [0, 6, 3],
         "CBT": [1, 2, 3],
     }
 )
@@ -219,4 +228,4 @@ df2 = pd.DataFrame(
 ######################
 #FIFO (df2)
 #SJF (df2)
-Random(df2)
+Random(df1)
