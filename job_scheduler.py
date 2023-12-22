@@ -172,12 +172,12 @@ def Random (df):
         # a list to keep track of jobs 
         # which have arrived at one point of time 
         # specified by 'time_counter'
-        arrived_jobs_df = df.query("AT <= @time_counter")["jobs"].tolist()
         arrived_jobs = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
         # ERROR HANDLING:
         # to show the gap from finish time of the last job
         # to arrive time of the next job.
         if arrived_jobs == [] and max(AT) > time_counter:
+            arrived_jobs_df = df.query("AT <= @time_counter")["jobs"].tolist()
             print("time_counter", time_counter)
             time_counter = AT[len(arrived_jobs_df)]
             continue
