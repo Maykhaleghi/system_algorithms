@@ -75,7 +75,7 @@ def SJF (df):
     n = len(sorted_df["jobs"].tolist())
     # extracte a list of all the arrive times and CBTs.
     AT = sorted_df["AT"].tolist()
-    CBT = sorted_df["CBT"].tolist()
+    CBT = df["CBT"].tolist()
     # initialize value of 'time_counter'
     # to the arrive time of the first job.
     # meaning the earliest arrive time.
@@ -128,14 +128,17 @@ def SJF (df):
             time_counter = time_counter + q
             sorted_df.at[index, "CBT"] = min_cbt - q
         # to break from the loop when all jobs have finished.
-        if sum(CBT) <= time_counter:
+        real_cbt = sorted_df["CBT"].tolist()
+        print(time_counter)
+        print(real_cbt)
+        if (time_counter >= sum(CBT)) and (sum(real_cbt) == 0):
             b = True
 
     # create a figure.
     fig, gnt = plt.subplots(figsize=(10, 6))
     # set limits so later on the placing of each tick can be precise.
     gnt.set_ylim(0, 100)
-    gnt.set_xlim(0, sum(CBT))
+    gnt.set_xlim(0, time_counter)
     xranges = sorted_df["x_range"].tolist()
     yticks_list = []
     # we need a loop to iterate over each job 
@@ -177,6 +180,7 @@ def Random (df):
         # to show the gap from finish time of the last job
         # to arrive time of the next job.
         if arrived_jobs == [] and max(AT) > time_counter:
+            # 'arrived_jobs_df' is only created for the purpose of error handling.
             arrived_jobs_df = df.query("AT <= @time_counter")["jobs"].tolist()
             print("time_counter", time_counter)
             time_counter = AT[len(arrived_jobs_df)]
@@ -211,8 +215,8 @@ def Random (df):
 df1 = pd.DataFrame(
     {
         "jobs": ["job1", "job2", "job3"],
-        "AT": [0, 6, 3],
-        "CBT": [1, 2, 3],
+        "AT": [0, 6, 2],
+        "CBT": [3, 3, 1],
     }
 )
 ######################
@@ -227,5 +231,5 @@ df2 = pd.DataFrame(
 )
 ######################
 #FIFO (df2)
-#SJF (df2)
-Random(df1)
+SJF (df1)
+#Random(df1)
