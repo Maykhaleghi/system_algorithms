@@ -13,18 +13,10 @@ def FIFO (df):
     *this function provides a simple horizantal bar chart,
     *together with the data sorted by arrive time.'''
 
-    # sort the dataframe named 'df' 
-    # by 'AT' values.
     p = df.sort_values("AT")
-    # create lists of response time and
-    # finish time for each job.
     start_point = []
     finish_point = []
-    # extracte a list of all the arrive times.
     AT = p["AT"].tolist()
-    # initialize value of 'var'
-    # to the arrive time of the first job.
-    # meaning the earliest arrive time.
     var = AT[0]
     
     for i,j in enumerate(p["jobs"].tolist()):
@@ -37,22 +29,16 @@ def FIFO (df):
             var = AT[i]
 
         start_point.append(var)
-        
-        # extracte the cbt of the job being processed.
         element_cbt = p.query("jobs == @j")["CBT"].tolist()
-
-        # update 'var' to the finish time of the job.
         var = var + element_cbt[0]
-        
         finish_point.append(var)
 
     print(p)
     print("start time:", start_point)
     print("finish time:", finish_point)
 
-    # create a figure.
+    # create the chart.
     fig, gnt = plt.subplots(figsize=(10, 6))
-    # create a horizantal bar chart, using 'barh'.
     gantt = gnt.barh(p["jobs"], p["CBT"], left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
     plt.show()
@@ -68,32 +54,17 @@ def SJF (df):
     *together with the data sorted by arrive time.'''
 
     q = int(input("Enter the time slice!"))
-    # sort the dataframe named 'df' 
-    # by 'AT' values.
     sorted_df = df.sort_values("AT")
-    # this number will be needed throughout the code.
     n = len(sorted_df["jobs"].tolist())
-    # extracte a list of all the arrive times and CBTs.
     AT = sorted_df["AT"].tolist()
     CBT = df["CBT"].tolist()
-    # initialize value of 'time_counter'
-    # to the arrive time of the first job.
-    # meaning the earliest arrive time.
-    # this value will hold for use the milisecond that we are at.
     time_counter = AT[0]
-    # create a  new column with initial value of empty list
-    # which will hold the (xmin, xwidth) for the chart.
     sorted_df["x_range"] = np.empty((len(sorted_df), 0)).tolist()
-    # a value which only use is to stop 
-    # the while loop at the right time.
+    
     b = False
-
-    # to check which job to turn to process next 
-    # we need a loop.
+    
     while b == False:
-        # a list to keep track of jobs 
-        # which have arrived at one point of time 
-        # specified by 'time_counter'
+        
         arrived_list = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
         arrived_cbt = sorted_df.query("jobs == @arrived_list")["CBT"].tolist()
         # deleting the finished jobs with 0 CBT.
@@ -107,8 +78,6 @@ def SJF (df):
             continue
 
         min_cbt = min(arrived_cbt)
-
-        # add the time to x_range column
         index = sorted_df[sorted_df["CBT"]== min_cbt].index.values
         index = index[0]
         x_min_cbt = sorted_df.at[index, "x_range"]
@@ -118,33 +87,24 @@ def SJF (df):
             x_min_cbt.append((time_counter, q))
         sorted_df.at[index, "x_range"] = x_min_cbt
 
-        # subtract the run time from CBT of the job and
-        # add to the time_counter the amount of run time
-        # for this time slice.
         if min_cbt < q:
             time_counter = time_counter + min_cbt
             sorted_df.at[index, "CBT"] = 0
         else:
             time_counter = time_counter + q
             sorted_df.at[index, "CBT"] = min_cbt - q
-        # to break from the loop when all jobs have finished.
+
         real_cbt = sorted_df["CBT"].tolist()
-        print(time_counter)
-        print(real_cbt)
         if (time_counter >= sum(CBT)) and (sum(real_cbt) == 0):
             b = True
 
-    # create a figure.
+    # create the chart.
     fig, gnt = plt.subplots(figsize=(10, 6))
-    # set limits so later on the placing of each tick can be precise.
     gnt.set_ylim(0, 100)
     gnt.set_xlim(0, time_counter)
     xranges = sorted_df["x_range"].tolist()
     yticks_list = []
-    # we need a loop to iterate over each job 
-    # so we can create the bar for each job.
     for i in range(0, n):
-        # calculate the place of ticks for each job.
         yranges = (i * (100 / n), (100 / n))
         yticks_list.append(((i + 1) * (100 / n)) - (0.5 * (100 / n)))
         gnt.broken_barh(xranges[i], yranges)
@@ -157,14 +117,14 @@ def SJF (df):
 ######################
     
 def Random (df):
+    '''Random,
+    using the random library chooses the jobs to be processed,
+    *accepts one parameter with the format of a pandas dataframe,
+    *this function provides a broken horizantal bar chart,
+    *together with the data sorted by arrive time.'''
 
     sorted_df = df.sort_values("AT")
-    #jobs = sorted_df["jobs"].tolist()
     AT = sorted_df["AT"].tolist()
-     # initialize value of 'time_counter'
-    # to the arrive time of the first job.
-    # meaning the earliest arrive time.
-    # this value will hold for use the milisecond that we are at.
     time_counter = AT[0]
     start_point = []
     finish_point = []
@@ -172,10 +132,9 @@ def Random (df):
     random_jobs = []
 
     while sorted_df["CBT"].tolist() != []:
-        # a list to keep track of jobs 
-        # which have arrived at one point of time 
-        # specified by 'time_counter'
+
         arrived_jobs = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
+
         # ERROR HANDLING:
         # to show the gap from finish time of the last job
         # to arrive time of the next job.
@@ -185,25 +144,20 @@ def Random (df):
             print("time_counter", time_counter)
             time_counter = AT[len(arrived_jobs_df)]
             continue
-        # using Random library, choose one of the arrived jobs.
+
         rand_job = random.choice(arrived_jobs)
         random_jobs.append(rand_job)
         rand_cbt = sorted_df.query("jobs == @rand_job")["CBT"].tolist()
         random_cbt.append(rand_cbt[0])
-        # add cbt of the job being processed to time_counter
-        # so it shows the real time.
         start_point.append(time_counter)
         time_counter = time_counter + rand_cbt[0]
         finish_point.append(time_counter)
-        # find the index of the job that's being processed
-        # so we can delete it from the database as it is already processed.
         index = sorted_df[sorted_df["jobs"]== rand_job].index.values
         index = index[0]
         sorted_df = sorted_df.drop(index)
         
-    # create a figure.
+    # create the chart.
     fig, gnt = plt.subplots(figsize=(10, 6))
-    # create a horizantal bar chart, using 'barh'.
     gantt = gnt.barh(random_jobs, random_cbt, left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
     plt.show()
@@ -231,5 +185,5 @@ df2 = pd.DataFrame(
 )
 ######################
 #FIFO (df2)
-SJF (df1)
+#SJF (df1)
 #Random(df1)
