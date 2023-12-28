@@ -242,41 +242,60 @@ def RR (df):
     # create a  new column with initial value of empty list
     # which will hold the (xmin, xwidth) for the chart.
     sorted_df["x_range"] = np.empty((len(sorted_df), 0)).tolist()
+    sorted_df["FWT"] = -1
     # a value which only use is to stop 
     # the while loop at the right time.
     b = False
-    p_order = []
+
     # to check which job to turn to process next 
     # we need a loop.
+    ii = 1
+    
     while b == False:
+        
         # a list to keep track of jobs 
         # which have arrived at one point of time 
         # specified by 'time_counter'
-        #arrived_list = sorted_df.query("AT <= @time_counter")["jobs"].tolist()
-        #arrived_cbt = sorted_df.query("jobs == @arrived_list")["CBT"].tolist()
+        arrived_list = sorted_df.query("AT <= @time_counter")["processes"].tolist()
+        arrived_cbt = sorted_df.query("processes == @arrived_list")["CBT"].tolist()
         # deleting the finished jobs with 0 CBT.
-        #arrived_cbt = [i for i in arrived_cbt if i != 0]
+        arrived_cbt = [i for i in arrived_cbt if i != 0]
 
         # ERROR HANDLING:
         # to show the gap from finish time of the last job
         # to arrive time of the next job.
-        #if arrived_cbt == []: 
-            #time_counter = AT[len(arrived_list)]
-            #continue
+        if arrived_cbt == [] and max(AT) > time_counter: 
+            # 'arrived_jobs_df' is only created for the purpose of error handling.
+            arrived_list_df = df.query("AT <= @time_counter")["processes"].tolist()
+            time_counter = AT[len(arrived_list_df)]
+            continue
 
         for p in p_list:
             p_at = sorted_df.query("processes == @p")["AT"].tolist()
-            print(p_at[0] >= time_counter)
-            print(p not in p_list)
-            if (p_at[0] >= time_counter) and (p not in p_order):
-                print("ifffffff")
-                p_order.append(p)
-            print(p_order)
-        chosen_p = p_order[0]
+            p_cbt = sorted_df.query("processes == @p")["CBT"].tolist()
+            if (time_counter >= p_at[0]) and (p_cbt[0] != 0):
+                print(p_cbt)
+                wt = time_counter - p_at[0]
+                index = sorted_df[sorted_df["processes"] == p].index.values
+                index = index[0]
+                sorted_df.at[index, "FWT"] = wt
+        
+        p_wt_list = sorted_df["FWT"].tolist()
+        print("p_wt_list", p_wt_list)
+        max_wt = max(p_wt_list)      
+        chosen_p = sorted_df.query("FWT == @max_wt")["processes"].tolist()
+        print("chosen_p", chosen_p)
+        chosen_p = chosen_p[0]
+        print("chosen_p", chosen_p)
+                
+
+        print("##############################################", ii)
+        ii = ii + 1
+        
         chosen_cbt = sorted_df.query("processes == @chosen_p")["CBT"].tolist()
 
         # add the time to x_range column
-        index = sorted_df[sorted_df["CBT"]== chosen_cbt[0]].index.values
+        index = sorted_df[sorted_df["processes"] == chosen_p].index.values
         index = index[0]
         x_chosen_cbt = sorted_df.at[index, "x_range"]
         if chosen_cbt[0] < q:
@@ -285,8 +304,9 @@ def RR (df):
             x_chosen_cbt.append((time_counter, q))
         sorted_df.at[index, "x_range"] = x_chosen_cbt
 
-        p_pop = p_order.pop(0)
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         # subtract the run time from CBT of the job and
         # add to the time_counter the amount of run time
@@ -295,20 +315,26 @@ def RR (df):
             print("if1")
             time_counter = time_counter + chosen_cbt[0]
             sorted_df.at[index, "CBT"] = 0
+            sorted_df.at[index, "FWT"] = -1
         else:
             print("else1")
             time_counter = time_counter + q
             sorted_df.at[index, "CBT"] = chosen_cbt[0] - q
-            p_order.append(p_pop)
+            #p_order.append(chosen_p)
+        sorted_df.at[index, "AT"] = time_counter
         # to break from the loop when all jobs have finished.
-        if sum(CBT) <= time_counter:
+        real_cbt = sorted_df["CBT"].tolist()
+        print("real_cbt", real_cbt)
+        #print(time_counter)
+        #print(real_cbt)
+        if (time_counter >= sum(CBT)) and (sum(real_cbt) == 0):
             b = True
 
     # create a figure.
     fig, gnt = plt.subplots(figsize=(10, 6))
     # set limits so later on the placing of each tick can be precise.
     gnt.set_ylim(0, 100)
-    gnt.set_xlim(0, sum(CBT))
+    gnt.set_xlim(0, time_counter)
     xranges = sorted_df["x_range"].tolist()
     yticks_list = []
     # we need a loop to iterate over each job 
@@ -428,8 +454,8 @@ def SRTF (df):
 df1 = pd.DataFrame(
     {
         "processes": ["p1", "p2", "p3"],
-        "AT": [0, 6, 2],
-        "CBT": [3, 3, 1],
+        "AT": [1, 4, 11],
+        "CBT": [5, 5, 1],
     }
 )
 ######################
@@ -437,14 +463,14 @@ df1 = pd.DataFrame(
 #valid test data without gap:
 df2 = pd.DataFrame(
     {
-        "processes": ["p1", "p2", "p3", "p4"],
-        "AT": [1, 2, 7, 3],
-        "CBT": [8, 2, 1, 4],
+        "processes": ["p1", "p2", "p3", "p4", "p5"],
+        "AT": [1, 2, 3, 4, 5],
+        "CBT": [10, 29, 3, 7, 12],
     }
 )
 ######################
 #FCFS (df1)
-#SPN(df1)
+#SPN(df2)
 #HRRN(df2)
-#RR(df2)
-SRTF(df2)
+RR(df2)
+#SRTF(df2)
