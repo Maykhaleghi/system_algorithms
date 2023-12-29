@@ -17,7 +17,7 @@ def FIFO (df):
     start_point = []
     finish_point = []
     AT = p["AT"].tolist()
-    var = AT[0]
+    time_counter = AT[0]
     
     for i,j in enumerate(p["jobs"].tolist()):
 
@@ -25,13 +25,13 @@ def FIFO (df):
         # if the first or other jobs have ended
         # yet new jobs haven't arrived,
         # there should be a gap between the latest job and the next one.
-        if var < AT[i]:
-            var = AT[i]
+        if time_counter < AT[i]:
+            time_counter = AT[i]
 
-        start_point.append(var)
+        start_point.append(time_counter)
         element_cbt = p.query("jobs == @j")["CBT"].tolist()
-        var = var + element_cbt[0]
-        finish_point.append(var)
+        time_counter = time_counter + element_cbt[0]
+        finish_point.append(time_counter)
 
     print(p)
     print("start time:", start_point)
