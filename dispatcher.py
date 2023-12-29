@@ -1,9 +1,32 @@
-import random
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 sns.set()
+
+def WT_TT (df, process_order, start, finish):
+    df["WT"] = 0
+    df["TT"] = 0
+    for i, p in enumerate(process_order):
+        index = df[df["processes"] == p].index.values
+        index = index[0]
+        p_at = df.query("processes == @p")["AT"].tolist()
+        df.at[index, "WT"] = start[i] - p_at[0]
+        df.at[index, "TT"] = finish[i] - p_at[0]
+    all_wt = df["WT"].tolist()
+    all_tt = df["TT"].tolist()
+    print("\n######################")
+    print(df)
+    print("######################")
+    print("Average of Waiting Time: ", sum(all_wt)/len(all_wt))
+    print("Average of Total Time: ", sum(all_tt)/len(all_tt))
+    print("######################")
+
+###################### 
+    
+
+
+######################
 
 def FCFS (df):
     '''First Come First Service,
@@ -31,11 +54,12 @@ def FCFS (df):
         element_cbt = p.query("processes == @j")["CBT"].tolist()
         time_counter = time_counter + element_cbt[0]
         finish_point.append(time_counter)
-
+    process_order = p["processes"].tolist()
     # create the chart.
     fig, gnt = plt.subplots(figsize=(10, 6))
-    gantt = gnt.barh(p["processes"], p["CBT"], left = start_point)
+    gantt = gnt.barh(process_order, p["CBT"], left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
+    WT_TT(df, process_order, start_point, finish_point)
     plt.show()
 
 ######################
@@ -376,7 +400,7 @@ df2 = pd.DataFrame(
     }
 )
 ######################
-#FCFS(df2)
+FCFS(df2)
 #SPN(df2)
 #HRRN(df2)
 #RR(df2)

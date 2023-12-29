@@ -5,6 +5,30 @@ import pandas as pd
 import seaborn as sns
 sns.set()
 
+def WT_TT (df, job_order, start, finish):
+    df["WT"] = 0
+    df["TT"] = 0
+    for i, p in enumerate(job_order):
+        index = df[df["jobs"] == p].index.values
+        index = index[0]
+        p_at = df.query("jobs == @p")["AT"].tolist()
+        df.at[index, "WT"] = start[i] - p_at[0]
+        df.at[index, "TT"] = finish[i] - p_at[0]
+    all_wt = df["WT"].tolist()
+    all_tt = df["TT"].tolist()
+    print("\n######################")
+    print(df)
+    print("######################")
+    print("Average of Waiting Time: ", sum(all_wt)/len(all_wt))
+    print("Average of Total Time: ", sum(all_tt)/len(all_tt))
+    print("######################")
+
+###################### 
+    
+
+
+######################
+
 def FIFO (df):
     '''FIFO or FCFS,
     First Come First Service,
@@ -41,6 +65,7 @@ def FIFO (df):
     fig, gnt = plt.subplots(figsize=(10, 6))
     gantt = gnt.barh(p["jobs"], p["CBT"], left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
+    WT_TT (df, p["jobs"].tolist(), start_point, finish_point)
     plt.show()
 
 ######################
@@ -160,6 +185,7 @@ def Random (df):
     fig, gnt = plt.subplots(figsize=(10, 6))
     gantt = gnt.barh(random_jobs, random_cbt, left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
+    WT_TT (df, random_jobs, start_point, finish_point)
     plt.show()
 
 ######################
