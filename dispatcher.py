@@ -1,3 +1,4 @@
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,16 +16,32 @@ def WT_TT (df, process_order, start, finish):
         df.at[index, "TT"] = finish[i] - p_at[0]
     all_wt = df["WT"].tolist()
     all_tt = df["TT"].tolist()
-    print("\n######################")
-    print(df)
-    print("######################")
-    print("Average of Waiting Time: ", sum(all_wt)/len(all_wt))
-    print("Average of Total Time: ", sum(all_tt)/len(all_tt))
-    print("######################")
+    avg_wt = sum(all_wt)/len(all_wt)
+    avg_tt = sum(all_tt)/len(all_tt)
+
+    return (avg_wt, avg_tt)
 
 ###################### 
     
+def preemptive_TT_WT (df, xranges, process_order):
+    df["WT"] = 0
+    df["TT"] = 0
+    for i, p in enumerate(process_order):
+        index = df[df["processes"] == p].index.values
+        index = index[0]
+        p_at = df.query("processes == @p")["AT"].tolist()
+        WT = xranges[i]
+        wt = WT[0][0] - p_at[0]
+        for j in range(1, len(WT)):
+            wt = wt + (WT[j][0] - (WT[j-1][0] + WT[j-1][1]))
+        df.at[index, "WT"] = wt
+        df.at[index, "TT"] = (WT[-1][0] + WT[-1][1]) - p_at[0]
+    all_wt = df["WT"].tolist()
+    all_tt = df["TT"].tolist()
+    avg_wt = sum(all_wt)/len(all_wt)
+    avg_tt = sum(all_tt)/len(all_tt)
 
+    return (avg_wt, avg_tt)
 
 ######################
 
@@ -35,6 +52,7 @@ def FCFS (df):
     *this function provides a simple horizantal bar chart,
     *together with the data sorted by arrive time.'''
 
+    start = time.time()
     p = df.sort_values("AT")
     start_point = []
     finish_point = []
@@ -59,8 +77,10 @@ def FCFS (df):
     fig, gnt = plt.subplots(figsize=(10, 6))
     gantt = gnt.barh(process_order, p["CBT"], left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
-    WT_TT(df, process_order, start_point, finish_point)
-    plt.show()
+    avg_wt, avg_tt = WT_TT (df, process_order, start_point, finish_point)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
 
 ######################
     
@@ -70,6 +90,7 @@ def SPN (df):
     *accepts one parameter with the format of a pandas dataframe,
     *this function provides a simple horizantal bar chart.'''
 
+    start = time.time()
     sorted_df = df.sort_values("AT")
     AT = sorted_df["AT"].tolist()
     time_counter = AT[0]
@@ -87,7 +108,6 @@ def SPN (df):
         # to show the gap from finish time of the last job
         # to arrive time of the next job.
         if arrived_cbt == [] and max(AT) > time_counter: 
-            print("time_counter", time_counter)
             time_counter = AT[len(arrived_list)]
             continue
         
@@ -95,6 +115,7 @@ def SPN (df):
         min_cbt = min(arrived_cbt)
         process_cbt.append(min_cbt)
         time_counter = time_counter + min_cbt
+        finish_point.append(time_counter)
 
         # add the time to x_range column
         index = sorted_df[sorted_df["CBT"] == min_cbt].index.values
@@ -102,12 +123,15 @@ def SPN (df):
         min_process = sorted_df.at[index, "processes"]
         process_order.append(min_process)
         sorted_df = sorted_df.drop(index)
-        
+    
     # create the chart.
     fig, gnt = plt.subplots(figsize=(10, 6))
     gantt = gnt.barh(process_order, process_cbt, left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
-    plt.show()
+    avg_wt, avg_tt = WT_TT (df, process_order, start_point, finish_point)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
 
 ######################
     
@@ -118,6 +142,7 @@ def HRRN (df):
     *accepts one parameter with the format of a pandas dataframe,
     *this function provides a simple horizantal bar chart.'''
 
+    start = time.time()
     sorted_df = df.sort_values("AT")
     AT = sorted_df["AT"].tolist()
     time_counter = AT[0]
@@ -140,7 +165,6 @@ def HRRN (df):
         # to arrive time of the next job.
         if arrived_cbt == [] and max(AT) > time_counter: 
             arrived_list_df = df.query("AT <= @time_counter")["processes"].tolist()
-            print("time_counter", time_counter)
             time_counter = AT[len(arrived_list_df)]
             continue
         
@@ -179,6 +203,7 @@ def HRRN (df):
         chosen_cbt = chosen_row["CBT"].tolist()
         process_cbt.append(chosen_cbt[0])
         time_counter = time_counter + chosen_cbt[0]
+        finish_point.append(time_counter)
 
         # add the time to x_range column
         chosen_p = chosen_row["processes"].tolist()
@@ -191,7 +216,10 @@ def HRRN (df):
     fig, gnt = plt.subplots(figsize=(10, 6))
     gantt = gnt.barh(process_order, process_cbt, left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
-    plt.show()
+    avg_wt, avg_tt = WT_TT (df, process_order, start_point, finish_point)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
 
 ######################
     
@@ -203,7 +231,8 @@ def RR (df):
     *this function provides a broken horizantal bar chart,
     *together with the data sorted by arrive time.'''
 
-    q = int(input("Enter the time slice!"))
+    start = time.time()
+    q = int(input("you have called RR; Enter the time slice!"))
     sorted_df = df.sort_values("AT")
     # this number will be needed throughout the code.
     n = len(sorted_df["processes"].tolist())
@@ -249,7 +278,13 @@ def RR (df):
         p_wt_list = sorted_df["FWT"].tolist()
         max_wt = max(p_wt_list)      
         chosen_p = sorted_df.query("FWT == @max_wt")["processes"].tolist()
-        chosen_p = chosen_p[0]
+
+        # 
+        if len(chosen_p) > 1:
+            chosen_p = chosen_p[len(chosen_p)-1]
+        else:
+            chosen_p = chosen_p[0]
+
         chosen_cbt = sorted_df.query("processes == @chosen_p")["CBT"].tolist()
 
         # add the time to x_range column
@@ -290,11 +325,13 @@ def RR (df):
         yranges = (i * (100 / n), (100 / n))
         yticks_list.append(((i + 1) * (100 / n)) - (0.5 * (100 / n)))
         gnt.broken_barh(xranges[i], yranges)
-    processes = sorted_df["processes"].tolist()
+    process_order = sorted_df["processes"].tolist()
     gnt.set_yticks(yticks_list)
-    gnt.set_yticklabels(processes)
-    
-    plt.show()
+    gnt.set_yticklabels(process_order)
+    avg_wt, avg_tt = preemptive_TT_WT (df, xranges, process_order)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
 
 ######################
     
@@ -306,7 +343,8 @@ def SRTF (df):
     *this function provides a broken horizantal bar chart,
     *together with the data sorted by arrive time.'''
 
-    q = int(input("Enter the time slice!"))
+    start = time.time()
+    q = int(input("you have called SRTF; Enter the time slice!"))
     sorted_df = df.sort_values("AT")
     # this number will be needed throughout the code.
     n = len(sorted_df["processes"].tolist())
@@ -372,12 +410,76 @@ def SRTF (df):
         yranges = (i * (100 / n), (100 / n))
         yticks_list.append(((i + 1) * (100 / n)) - (0.5 * (100 / n)))
         gnt.broken_barh(xranges[i], yranges)
-    processes = sorted_df["processes"].tolist()
+    process_order = sorted_df["processes"].tolist()
     gnt.set_yticks(yticks_list)
-    gnt.set_yticklabels(processes)
-    
+    gnt.set_yticklabels(process_order)
+    avg_wt, avg_tt = preemptive_TT_WT (df, xranges, process_order)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
+
+######################
+
+def calculate (alg_name, df):
+
+    print("\n######################")
+    print("\n", alg_name.__doc__)
+    plt, avg_wt, avg_tt, elapsed_time = alg_name(df)
+    print("\n######################")
+    print(df)
+    print("######################")
+    print("Average of Waiting Time: ", avg_wt)
+    print("Average of Total Time: ", avg_tt)
+    print("######################")
     plt.show()
 
+######################
+
+def the_best (alg_list, df):
+    '''the_best,
+    It is a function that tells you
+    which algorithm is the best for your provided dataframe.
+    *accepts two paramete; first a list of the algorithms you want to compare,
+    second with the format of a pandas dataframe. 
+    '''
+    time_list = []
+    wt_list = []
+    for alg in alg_list:
+        plt, avg_wt, avg_tt, elapsed_time = alg(df)
+        wt_list.append(avg_wt)
+        time_list.append(elapsed_time)
+    print(wt_list)
+    
+    df_to_store = pd.DataFrame(
+        {
+            "Algorithm": alg_list,
+            "Avg_WT": wt_list,
+            "Elapsed_time": time_list,
+        }
+    )
+    pd.options.display.float_format = '{: .18f}'.format
+    print("\n######################")
+    print(df_to_store)
+
+    min_value = min(wt_list)
+    list_min = [i for i , j in enumerate(wt_list) if j == min_value]
+    best_alg = []
+    for index in list_min:
+        best_alg.append(wt_list[index])
+    
+    min_wt = min(wt_list)
+    best_wt = df_to_store.query("Avg_WT == @min_wt")["Algorithm"].tolist()
+    min_time = min(time_list)
+    best_time = df_to_store.query("Elapsed_time == @min_time")["Algorithm"].tolist()
+
+    print("\n######################\n")
+    if best_wt == best_time:
+        print("the best algorithm according to **waiting time** and **run_time** is ", best_wt)
+    else:
+        print("the best algorithm according to **waiting time** is ", best_wt)
+        print("the best algorithm according to **Elapsed time** is ", best_time)
+    print("\n######################")
+    
 ######################
 #Testing...
 ######################
@@ -385,8 +487,8 @@ def SRTF (df):
 df1 = pd.DataFrame(
     {
         "processes": ["p1", "p2", "p3"],
-        "AT": [1, 4, 11],
-        "CBT": [5, 5, 1],
+        "AT": [1, 2, 11],
+        "CBT": [4, 3, 1],
     }
 )
 ######################
@@ -400,8 +502,29 @@ df2 = pd.DataFrame(
     }
 )
 ######################
-FCFS(df2)
-#SPN(df2)
-#HRRN(df2)
-#RR(df2)
-#SRTF(df2)
+######################
+#valid test data without gap:
+df3 = pd.DataFrame(
+    {
+        "processes": ["p1", "p2", "p3", "p4"],
+        "AT": [1, 2, 3, 4],
+        "CBT": [2, 7, 1, 3],
+    }
+)
+######################
+######################
+#valid test data with gap:
+df4 = pd.DataFrame(
+    {
+        "processes": ["p1", "p2", "p3"],
+        "AT": [1, 2, 3],
+        "CBT": [2, 7, 1],
+    }
+)
+######################
+#calculate(FCFS, df1)
+#calculate(SPN, df3)
+#calculate(HRRN, df1)
+#calculate(RR, df2)
+#calculate(SRTF, df2)
+the_best([FCFS, SPN, HRRN, RR, SRTF], df2)

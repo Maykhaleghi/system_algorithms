@@ -1,4 +1,5 @@
 import random
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -16,16 +17,32 @@ def WT_TT (df, job_order, start, finish):
         df.at[index, "TT"] = finish[i] - p_at[0]
     all_wt = df["WT"].tolist()
     all_tt = df["TT"].tolist()
-    print("\n######################")
-    print(df)
-    print("######################")
-    print("Average of Waiting Time: ", sum(all_wt)/len(all_wt))
-    print("Average of Total Time: ", sum(all_tt)/len(all_tt))
-    print("######################")
+    avg_wt = sum(all_wt)/len(all_wt)
+    avg_tt = sum(all_tt)/len(all_tt)
+    
+    return (avg_wt, avg_tt)
 
 ###################### 
     
+def preemptive_TT_WT (df, xranges, job_order):
+    df["WT"] = 0
+    df["TT"] = 0
+    for i, j in enumerate(job_order):
+        index = df[df["jobs"] == j].index.values
+        index = index[0]
+        j_at = df.query("jobs == @j")["AT"].tolist()
+        WT = xranges[i]
+        wt = WT[0][0] - j_at[0]
+        for j in range(1, len(WT)):
+            wt = wt + (WT[j][0] - (WT[j-1][0] + WT[j-1][1]))
+        df.at[index, "WT"] = wt
+        df.at[index, "TT"] = (WT[-1][0] + WT[-1][1]) - j_at[0]
+    all_wt = df["WT"].tolist()
+    all_tt = df["TT"].tolist()
+    avg_wt = sum(all_wt)/len(all_wt)
+    avg_tt = sum(all_tt)/len(all_tt)
 
+    return (avg_wt, avg_tt)
 
 ######################
 
@@ -37,6 +54,7 @@ def FIFO (df):
     *this function provides a simple horizantal bar chart,
     *together with the data sorted by arrive time.'''
 
+    start = time.time()
     p = df.sort_values("AT")
     start_point = []
     finish_point = []
@@ -57,16 +75,14 @@ def FIFO (df):
         time_counter = time_counter + element_cbt[0]
         finish_point.append(time_counter)
 
-    print(p)
-    print("start time:", start_point)
-    print("finish time:", finish_point)
-
     # create the chart.
     fig, gnt = plt.subplots(figsize=(10, 6))
     gantt = gnt.barh(p["jobs"], p["CBT"], left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
-    WT_TT (df, p["jobs"].tolist(), start_point, finish_point)
-    plt.show()
+    avg_wt, avg_tt = WT_TT (df, p["jobs"], start_point, finish_point)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
 
 ######################
 
@@ -78,7 +94,8 @@ def SJF (df):
     *this function provides a broken horizantal bar chart,
     *together with the data sorted by arrive time.'''
 
-    q = int(input("Enter the time slice!"))
+    q = int(input("you have called SJF; Enter the time slice!"))
+    start = time.time()
     sorted_df = df.sort_values("AT")
     n = len(sorted_df["jobs"].tolist())
     AT = sorted_df["AT"].tolist()
@@ -133,11 +150,13 @@ def SJF (df):
         yranges = (i * (100 / n), (100 / n))
         yticks_list.append(((i + 1) * (100 / n)) - (0.5 * (100 / n)))
         gnt.broken_barh(xranges[i], yranges)
-    jobs = sorted_df["jobs"].tolist()
+    job_order = sorted_df["jobs"].tolist()
     gnt.set_yticks(yticks_list)
-    gnt.set_yticklabels(jobs)
-    
-    plt.show()
+    gnt.set_yticklabels(job_order)
+    avg_wt, avg_tt = preemptive_TT_WT (df, xranges, job_order)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
 
 ######################
     
@@ -148,6 +167,7 @@ def Random (df):
     *this function provides a broken horizantal bar chart,
     *together with the data sorted by arrive time.'''
 
+    start = time.time()
     sorted_df = df.sort_values("AT")
     AT = sorted_df["AT"].tolist()
     time_counter = AT[0]
@@ -185,8 +205,69 @@ def Random (df):
     fig, gnt = plt.subplots(figsize=(10, 6))
     gantt = gnt.barh(random_jobs, random_cbt, left = start_point)
     gnt.bar_label(gantt, finish_point, padding = -17, color = "white")
-    WT_TT (df, random_jobs, start_point, finish_point)
+    avg_wt, avg_tt = WT_TT (df, random_jobs, start_point, finish_point)
+    end = time.time()
+    elapsed_time = end - start
+    return(plt, avg_wt, avg_tt, elapsed_time)
+
+######################
+
+def calculate (alg_name, df):
+
+    print("\n######################")
+    print("\n", alg_name.__doc__)
+    plt, avg_wt, avg_tt, elapsed_time = alg_name(df)
+    print("\n######################")
+    print(df)
+    print("######################")
+    print("Average of Waiting Time: ", avg_wt)
+    print("Average of Total Time: ", avg_tt)
+    print("######################")
     plt.show()
+
+######################
+
+def the_best (alg_list, df):
+    '''the_best,
+    It is a function that tells you
+    which algorithm is the best for your provided dataframe.
+    *accepts two paramete; first a list of the algorithms you want to compare,
+    second with the format of a pandas dataframe. 
+    '''
+    time_list = []
+    wt_list = []
+    for alg in alg_list:
+        plt, avg_wt, avg_tt, elapsed_time = alg(df)
+        wt_list.append(avg_wt)
+        time_list.append(elapsed_time)
+    print(wt_list)
+    
+    df_to_store = pd.DataFrame(
+        {
+            "Algorithm": alg_list,
+            "Avg_WT": wt_list,
+            "Elapsed_time": time_list,
+        }
+    )
+    pd.options.display.float_format = '{: .18f}'.format
+
+    print(df_to_store)
+    min_value = min(wt_list)
+    list_min = [i for i , j in enumerate(wt_list) if j == min_value]
+    best_alg = []
+    for index in list_min:
+        best_alg.append(wt_list[index])
+    
+    min_wt = min(wt_list)
+    best_wt = df_to_store.query("Avg_WT == @min_wt")["Algorithm"].tolist()
+    min_time = min(time_list)
+    best_time = df_to_store.query("Elapsed_time == @min_time")["Algorithm"].tolist()
+
+    if best_wt == best_time:
+        print("the best algorithm according to **waiting time** and **run_time** is ", best_wt)
+    else:
+        print("the best algorithm according to **waiting time** is ", best_wt)
+        print("the best algorithm according to **Elapsed time** is ", best_time)
 
 ######################
 #Testing...
@@ -210,6 +291,19 @@ df2 = pd.DataFrame(
     }
 )
 ######################
+######################
+#valid test data without gap:
+df3 = pd.DataFrame(
+    {
+        "jobs": ["job1", "job2", "job3", "job4", "job5"],
+        "AT": [1, 2, 3, 4, 5],
+        "CBT": [10, 29, 3, 7, 12],
+    }
+)
+######################
 #FIFO (df2)
 #SJF (df1)
-#Random(df1)
+#calculate(FIFO, df1)
+#calculate(SJF, df1)
+#calculate(Random, df1)
+the_best([FIFO, SJF, Random], df3)
