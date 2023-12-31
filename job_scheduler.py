@@ -306,4 +306,4 @@ df3 = pd.DataFrame(
 #calculate(FIFO, df1)
 #calculate(SJF, df1)
 #calculate(Random, df1)
-the_best([FIFO, SJF, Random], df3)
+#the_best([FIFO, SJF, Random], df3)

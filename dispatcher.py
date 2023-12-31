@@ -527,4 +527,4 @@ df4 = pd.DataFrame(
 #calculate(HRRN, df1)
 #calculate(RR, df2)
 #calculate(SRTF, df2)
-the_best([FCFS, SPN, HRRN, RR, SRTF], df2)
+#the_best([FCFS, SPN, HRRN, RR, SRTF], df2)
